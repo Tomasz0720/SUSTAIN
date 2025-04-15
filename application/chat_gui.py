@@ -6,10 +6,16 @@ The application also calculates the average token savings and CO2 emissions save
 """
 # Import required libraries
 import os
+import sys
 import tkinter as tk
 from tkinter import scrolledtext, PhotoImage, filedialog
 from dotenv import load_dotenv
+
+sustain_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../sustain_backend/api'))
+if sustain_path not in sys.path:
+    sys.path.append(sustain_path)
 from sustain import SUSTAIN
+
 from PIL import Image, ImageTk
 import platform
 
