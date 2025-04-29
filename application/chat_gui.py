@@ -16,30 +16,69 @@ import platform
 # Load environment variables from .env file
 load_dotenv()
 
+# Add this before your ChatApp class definition
+def create_rounded_rectangle(canvas, x1, y1, x2, y2, radius=25, **kwargs):
+    """Create a rounded rectangle on a canvas."""
+    points = [
+        x1 + radius, y1,
+        x2 - radius, y1,
+        x2, y1 + radius,
+        x2, y2 - radius,
+        x2 - radius, y2,
+        x1 + radius, y2,
+        x1, y2 - radius,
+        x1, y1 + radius
+    ]
+    return canvas.create_polygon(points, smooth=True, **kwargs)
+
+# Add the method to Canvas class
+tk.Canvas.create_rounded_rectangle = create_rounded_rectangle
+
 # Create a chat application using Tkinter
 class ChatApp:
     def __init__(self, root, track_token_length):
         self.track_token_length = track_token_length
         self.root = root
         self.root.title("SUSTAIN Chat")
+        # self.root.attributes("-fullscreen", True)
         self.root.geometry("800x800")
-        self.root.iconbitmap("SUSTAINicon.ico")
+        self.root.iconbitmap("application/assets/icon_Scz_icon.ico")
         self.message_history = []
 
-        if platform.system() == "Windows":
-            try:
-                import ctypes
-                myappid = u'company.sustain.chat.1.0'
-                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-            except Exception as e:
-                print(f"Failed to set application ID: {str(e)}")
+        # Detect the system the user has
+        system = platform.system()
+
+        try:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+
+            if system == "Windows":
+                icon_path = os.path.join(base_path, "application", "assets", "icon_Scz_icon.ico")
+                if os.path.exists(icon_path):
+                    self.root.iconbitmap(icon_path)
+                    import ctypes
+                    myappid = u'company.sustain.chat.1.0'
+                    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+                else:
+                    print("Windows icon not found at", icon_path)
+
+            else:
+                # macOS or Linux
+                icon_path = os.path.join(base_path, "application", "assets", "icon_Scz_icon.ico")
+                if os.path.exists(icon_path):
+                    icon = tk.PhotoImage(file=icon_path)
+                    self.root.iconphoto(True, icon)
+                else:
+                    print("macOS/Linux icon not found at", icon_path)
+
+        except Exception as e:
+            print("Icon load error:", e)
 
         # Initialize token savings
         self.total_percentage_saved = 0
         self.message_count = 0
 
         # Initialize dark mode setting
-        self.is_dark_mode = True  # Set dark mode as the default
+        self.is_dark_mode = False  # Set dark mode as the default
 
         # Create a top frame for the logo and info button
         self.top_frame = tk.Frame(root)
@@ -84,6 +123,7 @@ class ChatApp:
             height=25,
             font=("Mangal_Pro", 16)
         )
+
         self.chat_area.pack(padx=20, pady=10, fill=tk.BOTH, expand=True)
 
         self.entry = tk.Entry(root, font=("Mangal_Pro", 16))
@@ -241,11 +281,129 @@ class ChatApp:
     # Function to display a message in the chat area
     def display_message(self, message):
         self.chat_area.config(state='normal')
-        self.chat_area.insert(tk.END, message + "\n")
+        
+        # Determine if this is a user or AI message
+        if message.startswith("You: "):
+            is_user = True
+            bg_color = "#eaeaea"  # Light grey for user
+            content = message[5:]  # Remove "You: " prefix
+        elif message.startswith("\nSUSTAIN: ") or message.startswith("SUSTAIN: "):
+            is_user = False
+            bg_color = "#99d3ab"  # Light green for AI
+            content = message.replace("\nSUSTAIN: ", "").replace("SUSTAIN: ", "")  # Remove prefix
+        else:
+            # Regular message without special formatting
+            self.chat_area.insert(tk.END, message + "\n")
+            self.chat_area.config(state='disabled')
+            self.chat_area.yview(tk.END)
+            return
+        
+        # Create frame for this message
+        frame = tk.Frame(self.chat_area, bg=self.chat_area["bg"])
+        self.chat_area.window_create(tk.END, window=frame)
+        
+        # Create a frame that will contain both the bubble and the label
+        message_frame = tk.Frame(frame, bg=self.chat_area["bg"])
+        
+        # Calculate width based on content (min 100px, max 70% of chat area width)
+        chat_width = self.chat_area.winfo_width() or 600  # Default if not yet rendered
+        max_width = int(chat_width * 0.7)
+        content_width = min(max(100, len(content) * 8), max_width)
+        
+        # Calculate height based on content
+        line_length = content_width // 10  # Approximate chars per line
+        num_lines = max(1, len(content) // line_length + content.count('\n') + 1)
+        line_height = 24  # Approximate height per line
+        canvas_height = num_lines * line_height + 20  # Add padding
+        
+        # Position the entire message frame to the appropriate side
+        if is_user:
+            message_frame.pack(side=tk.RIGHT, pady=5)
+            frame.pack(fill=tk.X)  # Make the frame take full width
+        else:
+            message_frame.pack(side=tk.LEFT, pady=5)
+            frame.pack(fill=tk.X)  # Make the frame take full width
+        
+        # Create label first
+        if is_user:
+            label = tk.Label(message_frame, font=("Arial", 8), fg="#666666", bg=self.chat_area["bg"])
+            label.pack(side=tk.RIGHT, padx=2, anchor=tk.SE, pady=(0, 5))
+        else:
+            label = tk.Label(message_frame, font=("Arial", 8), fg="#666666", bg=self.chat_area["bg"])
+            label.pack(side=tk.LEFT, padx=2, anchor=tk.SW, pady=(0, 5))
+        
+        # Create canvas after the label so it appears below
+        canvas = tk.Canvas(
+            message_frame, 
+            width=content_width,
+            height=canvas_height,
+            bg=self.chat_area["bg"],
+            highlightthickness=0
+        )
+        
+        # Pack canvas to the appropriate side
+        if is_user:
+            canvas.pack(side=tk.RIGHT, padx=10)  # Add padding to the right side
+        else:
+            canvas.pack(side=tk.LEFT, padx=10)  # Add padding to the left side
+    
+        
+        # Draw a proper rounded rectangle with curved corners only
+        radius = 15  # Radius for corner curvature - adjust as needed
+        
+        # We need a better implementation of rounded rectangle that only rounds the corners
+        # Left-top corner
+        canvas.create_arc(0, 0, 2*radius, 2*radius, start=90, extent=90, fill=bg_color, outline="")
+        # Right-top corner
+        canvas.create_arc(content_width-2*radius, 0, content_width, 2*radius, start=0, extent=90, fill=bg_color, outline="")
+        # Left-bottom corner
+        canvas.create_arc(0, canvas_height-2*radius, 2*radius, canvas_height, start=180, extent=90, fill=bg_color, outline="")
+        # Right-bottom corner
+        canvas.create_arc(content_width-2*radius, canvas_height-2*radius, content_width, canvas_height, start=270, extent=90, fill=bg_color, outline="")
+        
+        # Top edge
+        canvas.create_rectangle(radius, 0, content_width-radius, radius, fill=bg_color, outline="")
+        # Left edge
+        canvas.create_rectangle(0, radius, radius, canvas_height-radius, fill=bg_color, outline="")
+        # Bottom edge
+        canvas.create_rectangle(radius, canvas_height-radius, content_width-radius, canvas_height, fill=bg_color, outline="")
+        # Right edge
+        canvas.create_rectangle(content_width-radius, radius, content_width, canvas_height-radius, fill=bg_color, outline="")
+        
+        # Middle part
+        canvas.create_rectangle(radius, radius, content_width-radius, canvas_height-radius, fill=bg_color, outline="")
+        
+            
+        # Add text inside the bubble
+        canvas.create_text(
+            content_width/2, canvas_height/2,
+            text=content, 
+            width=content_width-20,
+            font=("Mangal_Pro", 14), 
+            fill="black",
+            justify=tk.LEFT  # Always left-align text for readability
+        )
+        
+        # Add a new line after the bubble
+        self.chat_area.insert(tk.END, "\n\n")
         self.chat_area.config(state='disabled')
         self.chat_area.yview(tk.END)
+    
+    # Add method to Canvas class for drawing rounded rectangles
+    def create_rounded_rectangle(self, canvas, x1, y1, x2, y2, radius=25, **kwargs):
+        points = [
+            x1 + radius, y1,
+            x2 - radius, y1,
+            x2, y1 + radius,
+            x2, y2 - radius,
+            x2 - radius, y2,
+            x1 + radius, y2,
+            x1, y2 - radius,
+            x1, y1 + radius
+        ]
+        return canvas.create_polygon(points, smooth=True, **kwargs)
 
-    # Function to display a settings message in the chat area
+# Continue with class methods (properly indented)
     def display_settings_message(self, message):
         self.chat_area.config(state='normal')
         self.chat_area.insert(tk.END, message + "\n", "grey")
