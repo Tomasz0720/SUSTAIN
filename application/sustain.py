@@ -8,7 +8,7 @@ before sending the input to the OpenAI API.
 # Import required libraries
 import os
 import logging
-from openai import OpenAI
+import openai
 import spacy
 import tiktoken
 import re
@@ -21,14 +21,14 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
-
 class OpenAIClient:
     def __init__(self, api_key):
-        self.client = OpenAI(api_key=api_key)
+        openai.api_key = api_key
 
     def get_openai_response(self, user_input):
         try:
-            response = self.client.chat.completions.create(
+            # Use the old-style API format
+            response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "user", "content": f"{user_input} in <20 words."}
@@ -36,19 +36,19 @@ class OpenAIClient:
                 max_tokens=50
             )
             return response.choices[0].message.content.strip()
-        except OpenAI.error.OpenAIError as e:
+        except Exception as e:
             logging.error(f"OpenAIError: {str(e)}")
             return self.handle_api_error(e)
 
     @staticmethod
     def handle_api_error(error):
-        if error.code == 'insufficient_quota':
+        # Basic error handling without accessing .code attribute
+        error_str = str(error)
+        if "insufficient_quota" in error_str:
             return "Error: The API quota has been exceeded. Please contact SUSTAIN."
-        elif error.code == 'model_not_found':
-            return (
-                "Error: The specified model does not exist or you do not have access to it."
-            )
-        return f"Error: {str(error)}"
+        elif "model_not_found" in error_str:
+            return "Error: The specified model does not exist or you do not have access to it."
+        return f"Error: {error_str}"
 
 
 class MathOptimizer:

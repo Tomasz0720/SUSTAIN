@@ -1,5 +1,10 @@
-openai==0.28
 python-dotenv
 spaCy
 tiktoken
 Pillow
+openai
+pyttsx3
+SpeechRecognition
+pyaudio
+word2number
+python-dotenv
