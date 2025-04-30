@@ -51,6 +51,15 @@ Our mission is to deliver a sustainable, high-efficiency alternative to major la
   - Token savings: 50%
   - You have saved: 0.0023 kWh of power and 0.0009 metric tons of CO₂ emissions
 
+### **4. Voice (Early Beta)**
+- Activate SUSTAIN Voice to interact with the SUSTAIN using natural speech.
+- Prompts are transcribed, token-optimized, and processed just like text input, preserving SUSTAIN's core values.
+- Voice output provides clear, concise responses you can hear instantly.
+- Designed for hands-free productivity, ideal for multitasking, field workers, or accessibility use cases.
+- Beta includes:
+  - Speech-to-text processing with optimization filters.
+  - Text-to-speech responses with energy-efficient summarization.
+
 ---
 
 ## Roadmap
