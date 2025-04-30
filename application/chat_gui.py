@@ -91,7 +91,7 @@ class ChatApp:
         # Logo
         try:
             logo_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 
-                "assets/SUSTAINOriginalBlackTransparentCropped.png"))
+                "assets/SUSTAIN_BLACK.png"))
             if os.path.exists(logo_path):
                 original_logo = Image.open(logo_path)
                 max_size = (180, 60)
@@ -309,7 +309,7 @@ class ChatApp:
             text_color = self.colors["dark_text"]
             button_bg = self.colors["accent"]
             button_fg = "white"
-            logo_path = "assets/SUSTAIN_VOICE_WHITE.png" if hasattr(self, 'voice_active') and self.voice_active else "assets/SUSTAINOriginalWhiteTransparentCropped.png"
+            logo_path = "assets/SUSTAIN_VOICE_WHITE.png" if hasattr(self, 'voice_active') and self.voice_active else "assets/SUSTAIN_WHITE.png"
             entry_highlight = "#444444"
         else:
             # Light mode colors
@@ -318,7 +318,7 @@ class ChatApp:
             text_color = self.colors["light_text"]
             button_bg = self.colors["accent"]
             button_fg = "white"
-            logo_path = "assets/SUSTAIN_VOICE_BLACK.png" if hasattr(self, 'voice_active') and self.voice_active else "assets/SUSTAINOriginalBlackTransparentCropped.png"
+            logo_path = "assets/SUSTAIN_VOICE_BLACK.png" if hasattr(self, 'voice_active') and self.voice_active else "assets/SUSTAIN_BLACK.png"
             entry_highlight = "#dddddd"
 
         # Apply theme to main frames
@@ -546,12 +546,12 @@ class ChatApp:
                         self.display_settings_message("Speech recognition libraries not installed. Please install them manually.")
                         self.display_settings_message("Run: pip install SpeechRecognition pyaudio")
                         # Reset to normal logo if there's an error
-                        logo_path = "assets/SUSTAINOriginalWhiteTransparentCropped.png" if self.is_dark_mode else "assets/SUSTAINOriginalBlackTransparentCropped.png"
+                        logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
                         self.update_logo(logo_path)
                     except Exception as e:
                         self.display_settings_message(f"Error initializing voice mode: {str(e)}")
                         # Reset to normal logo if there's an error
-                        logo_path = "assets/SUSTAINOriginalWhiteTransparentCropped.png" if self.is_dark_mode else "assets/SUSTAINOriginalBlackTransparentCropped.png"
+                        logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
                         self.update_logo(logo_path)
             
             # Change the voice button appearance when active
@@ -591,7 +591,7 @@ class ChatApp:
                 self.voice_button.config(text="Voice", bg=self.colors["accent"])
                 self.display_settings_message("Voice mode deactivated.") 
 
-                logo_path = "assets/SUSTAINOriginalWhiteTransparentCropped.png" if self.is_dark_mode else "assets/SUSTAINOriginalBlackTransparentCropped.png"
+                logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
                 self.update_logo(logo_path)
 
     def display_settings_message(self, message):
