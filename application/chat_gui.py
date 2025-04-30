@@ -482,7 +482,9 @@ class ChatApp:
             
             # Create a flag for controlling the voice loop
             self.voice_active = True
-            
+
+            self.voice_button.config(text="Stop Voice", bg="#ff6b6b")
+
             def voice_conversation_loop():
                 # Display initial message
                 self.display_settings_message("Voice mode activated. Speak to chat with SUSTAIN. Say 'stop voice' to exit voice mode.")
@@ -491,77 +493,72 @@ class ChatApp:
 
                 # Initialize recognizer
                 recognizer = sr.Recognizer()
-                recognizer.pause_threshold = 0.8
+                recognizer.pause_threshold = 1.5
                 recognizer.energy_threshold = 300
+
+                def listen_for_speech():
+                    while self.voice_active:
+                        try:
+                            # Visual indicator that voice is listening
+                            self.display_settings_message("Listening...")
+                            
+                            # Listen for input
+                            with sr.Microphone() as source:
+                                recognizer.adjust_for_ambient_noise(source, duration=0.5)
+                                audio = recognizer.listen(source, timeout=5, phrase_time_limit=None)
+
+                            try:
+                                # Process speech to text
+                                user_input = recognizer.recognize_google(audio)
+
+                                if user_input and len(user_input.strip()) > 0:
+                                    return user_input
+                                
+                            except sr.UnknownValueError:
+                                continue
+
+                        except Exception as e:
+                            self.display_settings_message(f"Listening error: {str(e)}")
+                            self.root.after(500, lambda: None)
+                    
+                    return None
                 
-                # Keep listening until told to stop
+                # Keep the conversation going until stopped
                 while self.voice_active:
-                    try:
-                        # Visual indicator that we're listening
-                        self.display_settings_message("Listening...")
-                        
-                        # Listen for input
-                        with sr.Microphone() as source:
-                            recognizer.adjust_for_ambient_noise(source, duration=0.5)
-                            audio = recognizer.listen(source, timeout=5, phrase_time_limit=10)
-                        
-                        # Process speech to text
-                        user_input = recognizer.recognize_google(audio)
-                        
-                        # Check for exit command
-                        if user_input.lower() in ["stop voice", "exit voice", "end voice"]:
-                            self.voice_active = False
-                            self.display_settings_message("Voice mode deactivated.")
-                            engine.say("Voice mode deactivated")
-                            engine.runAndWait()
-                            return
-                        
-                        # Put the recognized text in the entry field
-                        self.entry.delete(0, tk.END)
-                        self.entry.insert(0, user_input)
-                        
-                        # Display what was recognized
-                        self.display_settings_message(f"I heard: {user_input}")
-                        
-                        # Send the message and get response
-                        self.send_message(None)
-                        
-                        # Brief pause to allow the user to see the response
-                        # before starting to listen again
-                        self.root.after(2000, lambda: None)
-                        
-                    except sr.UnknownValueError:
-                        self.display_settings_message("Sorry, I couldn't understand what you said.")
-                        engine.say("Sorry, Could you try that again?")
+                    # Listen continuously until speech is detected
+                    user_input = listen_for_speech()
+                    
+                    # Check if we've exited the listening loop because voice mode was deactivated
+                    if not self.voice_active or user_input is None:
+                        break
+                    
+                    # Check for exit command
+                    if user_input.lower() in ["stop voice", "exit voice", "end voice"]:
+                        self.voice_active = False
+                        self.display_settings_message("Voice mode deactivated.")
+                        engine.say("Voice mode deactivated")
                         engine.runAndWait()
-                    except sr.RequestError as e:
-                        self.display_settings_message(f"Could not request results; {e}")
-                        engine.say("I'm having trouble connecting to the speech recognition service.")
-                        engine.runAndWait()
-                    except Exception as e:
-                        self.display_settings_message(f"Error: {str(e)}")
-                        # If there's an error, pause briefly before trying again
-                        self.root.after(1000, lambda: None)
-                    except ImportError:
-                        self.display_settings_message("Speech recognition libraries not installed. Please install them manually.")
-                        self.display_settings_message("Run: pip install SpeechRecognition pyaudio")
-                        # Reset to normal logo if there's an error
-                        logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
-                        self.update_logo(logo_path)
-                    except Exception as e:
-                        self.display_settings_message(f"Error initializing voice mode: {str(e)}")
-                        # Reset to normal logo if there's an error
-                        logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
-                        self.update_logo(logo_path)
-            
-            # Change the voice button appearance when active
-            self.voice_button.config(text="Stop Voice", bg="#ff6b6b")
-            
-            # Run the voice conversation in a separate thread so it doesn't freeze the UI
+                        break
+                    
+                    # Put the recognized text in the entry field
+                    self.entry.delete(0, tk.END)
+                    self.entry.insert(0, user_input)
+                    
+                    # Display what was recognized
+                    self.display_settings_message(f"I heard: {user_input}")
+                    
+                    # Send the message and get response
+                    self.send_message(None)
+                    
+                    # Brief pause before starting to listen again
+                    self.root.after(1000, lambda: None)
+
+            # Start the voice conversation loop in a thread
             voice_thread = threading.Thread(target=voice_conversation_loop)
             voice_thread.daemon = True  # Thread will close when main program exits
             voice_thread.start()
-            
+                            
+                        
             # Set up a check to update the button back when voice mode is deactivated
             def check_voice_status():
                 if not self.voice_active:
@@ -570,7 +567,8 @@ class ChatApp:
                     self.root.after(500, check_voice_status)
             
             check_voice_status()
-            
+
+        
         except ImportError:
             self.display_settings_message("Speech recognition libraries not installed. Please install them manually.")
             self.display_settings_message("Run: pip install SpeechRecognition pyaudio")
@@ -579,20 +577,20 @@ class ChatApp:
 
 
     def toggle_voice_mode(self):
-            """Toggle voice mode on/off"""
-            if not hasattr(self, 'voice_active') or not self.voice_active:
-                # Start voice mode
-                self.handle_voice_input()
-                logo_path = "assets/SUSTAIN_VOICE_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_VOICE_BLACK.png"
-                self.update_logo(logo_path)
-            else:
-                # Stop voice mode
-                self.voice_active = False
-                self.voice_button.config(text="Voice", bg=self.colors["accent"])
-                self.display_settings_message("Voice mode deactivated.") 
+        """Toggle voice mode on/off"""
+        if not hasattr(self, 'voice_active') or not self.voice_active:
+            # Start voice mode
+            self.handle_voice_input()
+            logo_path = "assets/SUSTAIN_VOICE_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_VOICE_BLACK.png"
+            self.update_logo(logo_path)
+        else:
+            # Stop voice mode
+            self.voice_active = False
+            self.voice_button.config(text="Voice", bg=self.colors["accent"])
+            self.display_settings_message("Voice mode deactivated.") 
 
-                logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
-                self.update_logo(logo_path)
+            logo_path = "assets/SUSTAIN_WHITE.png" if self.is_dark_mode else "assets/SUSTAIN_BLACK.png"
+            self.update_logo(logo_path)
 
     def display_settings_message(self, message):
         """Display a system/settings message in the chat area"""
