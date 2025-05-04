@@ -1,8 +1,8 @@
 # 🌱 SUSTAIN: The Environmentally-Friendly AI 🌱
 
 <picture>
-  <source srcset="SUSTAINOriginalWhiteTransparentCropped.png" media="(prefers-color-scheme: dark)">
-  <img src="SUSTAINOriginalBlackTransparentCropped.png" alt="SUSTAIN logo">
+  <source srcset="application/assets/SUSTAINOriginalWhiteTransparentCropped.png" media="(prefers-color-scheme: dark)">
+  <img src="application/assets/SUSTAINOriginalBlackTransparentCropped.png" alt="SUSTAIN logo">
 </picture>
 
 ## Overview
